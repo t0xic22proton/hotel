@@ -329,8 +329,13 @@ export default function Reservations() {
                     placeholder="Alguma observação sobre sua reserva..."
                   />
                 </div>
-                <button type="submit" className="btn-finish" style={{ marginTop: '20px' }}>
-                  Finalizar Reserva
+                <button
+                  type="submit"
+                  className="btn-finish"
+                  style={{ marginTop: '20px' }}
+                  disabled={createReservationMutation.isPending}
+                >
+                  {createReservationMutation.isPending ? 'Processando...' : 'Finalizar Reserva'}
                 </button>
               </form>
             </div>
