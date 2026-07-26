@@ -58,13 +58,14 @@ export default function Reservations() {
   const createReservationMutation = trpc.reservations.create.useMutation();
   const createBuckpayMutation = trpc.buckpay.createTransaction.useMutation();
 
-  // Rastrear visita à página
+  // Rastrear visita à página (dispara uma única vez por sessão)
   useEffect(() => {
     trackEventMutation.mutate({
       eventType: 'page_visit',
       sessionId,
     });
-  }, [sessionId, trackEventMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   const handleSelectAccommodation = (acc: typeof ACCOMMODATIONS[0]) => {
     setSelectedAccommodation(acc);
