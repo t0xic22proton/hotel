@@ -194,6 +194,19 @@ export const appRouter = router({
             throw new Error('BuckPay token not configured');
           }
 
+          // A BuckPay espera document/phone só com dígitos (phone com DDI 55),
+          // mas o formulário guarda os valores mascarados ("123.456.789-00",
+          // "(11) 99999-9999") para exibição.
+          const onlyDigits = (value?: string) => {
+            const digits = value?.replace(/\D/g, '') ?? '';
+            return digits.length > 0 ? digits : undefined;
+          };
+          const buyerDocument = onlyDigits(input.buyerCpf);
+          const phoneDigits = onlyDigits(input.buyerPhone);
+          const buyerPhone = phoneDigits
+            ? (phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`)
+            : undefined;
+
           const response = await fetch('https://api.realtechdev.com.br/v1/transactions', {
             method: 'POST',
             headers: {
@@ -208,8 +221,8 @@ export const appRouter = router({
               buyer: {
                 name: input.buyerName,
                 email: input.buyerEmail,
-                document: input.buyerCpf,
-                phone: input.buyerPhone,
+                document: buyerDocument,
+                phone: buyerPhone,
               },
               product: {
                 name: 'Taxa de Agendamento - Resort Fazenda São João',
