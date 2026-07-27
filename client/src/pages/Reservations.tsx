@@ -449,6 +449,11 @@ export default function Reservations() {
                     )}
                   </div>
                 )}
+                {checkoutStatus === 'success' && (
+                  <button className="btn-close-checkout" onClick={() => setCheckoutOpen(false)}>
+                    Concluído
+                  </button>
+                )}
               </div>
 
               <p style={{ fontSize: '12px', color: '#777', textAlign: 'center', marginTop: '16px' }}>

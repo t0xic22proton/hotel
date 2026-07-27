@@ -451,8 +451,11 @@
     padding: 0;
     max-width: 500px;
     width: 95%;
+    max-height: 90vh;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .checkout-header {
@@ -463,6 +466,7 @@
     border-bottom: 1px solid var(--reservas-border);
     background: var(--reservas-teal);
     color: #fff;
+    flex-shrink: 0;
 }
 
 .checkout-header h2 {
@@ -493,6 +497,7 @@
 
 .checkout-body {
     padding: 24px;
+    overflow-y: auto;
 }
 
 .checkout-subtitle {
@@ -592,6 +597,18 @@
     font-family: monospace;
     word-break: break-all;
     margin-bottom: 8px;
+}
+
+.btn-close-checkout {
+    background: var(--reservas-teal);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
 }
 
 .btn-retry-checkout {
