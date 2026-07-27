@@ -151,8 +151,12 @@ export default function Reservations() {
       });
 
       if (buckpayResponse.data) {
-        setPixCode(buckpayResponse.data.pix?.qr_code_url);
-        setQrCode(buckpayResponse.data.pix?.qr_code);
+        setPixCode(buckpayResponse.data.pix?.code);
+        setQrCode(
+          buckpayResponse.data.pix?.qrcode_base64
+            ? `data:image/png;base64,${buckpayResponse.data.pix.qrcode_base64}`
+            : null
+        );
         setCheckoutStatus('success');
         
         // Rastrear pagamento confirmado
