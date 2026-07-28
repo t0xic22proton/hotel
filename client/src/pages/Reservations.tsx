@@ -167,6 +167,7 @@ export default function Reservations() {
       }
     } catch (error) {
       console.error('Error:', error);
+      setCheckoutOpen(true);
       setCheckoutStatus('error');
     }
   };

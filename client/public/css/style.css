@@ -260,7 +260,7 @@ ul {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.2) 100%);
+    background: linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 100%);
 }
 
 .hero-content {
@@ -279,6 +279,7 @@ ul {
     margin-bottom: 15px;
     text-transform: uppercase;
     font-weight: 800;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
 .hero-content p {
@@ -286,6 +287,7 @@ ul {
     color: var(--white);
     font-style: italic;
     margin-bottom: 30px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 
 .hero-form {
@@ -1149,7 +1151,7 @@ ul {
 
 .corporate-hero-content h1 {
     font-size: 36px;
-    color: var(--white);
+    color: var(--primary);
     margin-bottom: 20px;
     text-transform: uppercase;
     line-height: 1.2;
@@ -1351,7 +1353,9 @@ ul {
     }
 
     .hero {
-        height: 500px;
+        height: auto;
+        min-height: 0;
+        padding: 40px 0;
     }
 
     .hero-content h1 {
@@ -1371,19 +1375,46 @@ ul {
     }
 
     .hero-content {
-        left: 20px;
-        right: 20px;
+        position: relative;
+        top: auto;
+        transform: none;
+        left: auto;
+        right: auto;
+        max-width: 100%;
+        padding: 0 20px;
+    }
+
+    .hero-arrow,
+    .hero-nav {
+        display: none;
     }
 
     .footer-bottom {
         flex-direction: column;
         text-align: center;
     }
+
+    .page-hero {
+        padding: 100px 0 60px;
+    }
+
+    .page-hero h1 {
+        font-size: 30px;
+    }
+
+    .corporate-hero-content {
+        padding: 24px;
+    }
+
+    .corporate-hero-content h1 {
+        font-size: 26px;
+    }
 }
 
 @media (max-width: 480px) {
     .hero {
-        height: 450px;
+        height: auto;
+        padding: 30px 0;
     }
 
     .hero-content h1 {
@@ -1401,5 +1432,13 @@ ul {
     .about-stats {
         flex-direction: column;
         gap: 15px;
+    }
+
+    .about-images {
+        grid-template-columns: 1fr;
+    }
+
+    .page-hero h1 {
+        font-size: 26px;
     }
 }

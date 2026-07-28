@@ -244,6 +244,7 @@
 }
 
 .accommodation-card {
+    position: relative;
     background: var(--reservas-card);
     border-radius: 12px;
     overflow: hidden;

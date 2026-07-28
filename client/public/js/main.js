@@ -14,9 +14,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Close menu on link click (mobile)
+    // --- Mobile dropdown toggle ---
+    // Em telas de toque o hover não existe, então o primeiro tap num item
+    // com submenu abre o dropdown em vez de navegar direto.
+    document.querySelectorAll('.nav-menu > li').forEach(item => {
+        const dropdown = item.querySelector(':scope > .dropdown');
+        const link = item.querySelector(':scope > a');
+        if (!dropdown || !link) return;
+
+        link.addEventListener('click', function(e) {
+            if (window.innerWidth > 768) return;
+            if (!item.classList.contains('dropdown-open')) {
+                e.preventDefault();
+                e.stopPropagation();
+                document.querySelectorAll('.nav-menu > li.dropdown-open').forEach(li => {
+                    if (li !== item) li.classList.remove('dropdown-open');
+                });
+                item.classList.add('dropdown-open');
+            }
+        });
+    });
+
+    // Close menu on link click (mobile) — ignora o tap que só abriu o dropdown
     document.querySelectorAll('.nav-menu a').forEach(link => {
-        link.addEventListener('click', function() {
+        link.addEventListener('click', function(e) {
+            if (e.defaultPrevented) return;
             navMenu.classList.remove('open');
         });
     });
