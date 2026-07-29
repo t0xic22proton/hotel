@@ -17,7 +17,7 @@ const ACCOMMODATIONS = [
     description: '2 quartos, varanda privativa com rede e vista para piscinas e áreas verdes. Equipada com ar condicionado, ventilador de teto, wifi, tv, telefone, frigobar e banheiro com aquecimento central.',
     price: 65000,
     amenities: ['2 quartos', 'Ar condicionado', 'Wi-Fi', 'TV', 'Banheira'],
-    image: 'https://hotelfazendasaojoao.com.br/wp-content/uploads/2026/01/Capturar-1-e1769807819107.png',
+    image: '/images/piscinas-capturar1.webp',
     badge: 'Popular',
   },
   {
@@ -26,7 +26,7 @@ const ACCOMMODATIONS = [
     description: 'Uma suíte, dois quartos com banheiro, área de lazer privativa com churrasqueira e spa. Sala com cozinha americana. Equipada com ar condicionado, wifi, tv a cabo e telefone.',
     price: 95000,
     amenities: ['Churrasqueira', 'Spa', 'Cozinha', 'Ar condicionado', 'Wi-Fi', 'TV a cabo'],
-    image: 'https://hotelfazendasaojoao.com.br/wp-content/uploads/2026/01/DJI_20251224162845_0026_D-e1769807601487.jpg',
+    image: '/images/dji-drone.webp',
     badge: 'Premium',
   },
 ];
