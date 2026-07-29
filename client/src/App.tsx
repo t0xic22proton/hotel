@@ -1,18 +1,25 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
+import { Suspense, lazy } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { DashboardLayoutSkeleton } from "./components/DashboardLayoutSkeleton";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Reservations from "./pages/Reservations";
-import AdminDashboard from "./pages/AdminDashboard";
+
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
       <Route path="/reservas" component={Reservations} />
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin">
+        <Suspense fallback={<DashboardLayoutSkeleton />}>
+          <AdminDashboard />
+        </Suspense>
+      </Route>
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
