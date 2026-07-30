@@ -59,6 +59,7 @@ export default function AdminDashboard() {
   const deleteReservationMutation = trpc.reservations.delete.useMutation({
     onSuccess: () => {
       reservationsQuery.refetch();
+      funnelMetricsQuery.refetch();
     },
   });
   const [searchTerm, setSearchTerm] = useState("");
