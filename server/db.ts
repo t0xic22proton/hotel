@@ -204,4 +204,16 @@ export async function updateReservationStatus(
   }
 }
 
+export async function deleteReservation(externalId: string) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  try {
+    await db.delete(reservations).where(eq(reservations.externalId, externalId));
+  } catch (error) {
+    console.error('[Database] Failed to delete reservation:', error);
+    throw error;
+  }
+}
+
 // TODO: add feature queries here as your schema grows.

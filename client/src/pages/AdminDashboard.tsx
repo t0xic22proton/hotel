@@ -56,8 +56,26 @@ export default function AdminDashboard() {
   const reservationsQuery = trpc.reservations.list.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
   });
+  const deleteReservationMutation = trpc.reservations.delete.useMutation({
+    onSuccess: () => {
+      reservationsQuery.refetch();
+    },
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (externalId: string, guestName: string) => {
+    if (!window.confirm(`Excluir a reserva de ${guestName}? Essa ação não pode ser desfeita.`)) {
+      return;
+    }
+    setDeletingId(externalId);
+    try {
+      await deleteReservationMutation.mutateAsync({ externalId });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading) {
     return <div>Carregando...</div>;
@@ -165,6 +183,7 @@ export default function AdminDashboard() {
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Check-out</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Taxa</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -202,6 +221,16 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                           R$ {(reservation.bookingFee / 100).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={deletingId === reservation.externalId}
+                            onClick={() => handleDelete(reservation.externalId, reservation.guestName)}
+                          >
+                            {deletingId === reservation.externalId ? "Excluindo..." : "Excluir"}
+                          </Button>
                         </td>
                       </tr>
                     ))}

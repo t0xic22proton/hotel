@@ -14,6 +14,7 @@ import {
   getAllReservations,
   getReservationByExternalId,
   updateReservationStatus,
+  deleteReservation,
   upsertUser,
 } from "./db";
 
@@ -169,6 +170,26 @@ export const appRouter = router({
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
             message: 'Failed to update reservation status',
+          });
+        }
+      }),
+
+    /**
+     * Excluir reserva (apenas admin)
+     */
+    delete: protectedProcedure
+      .input(z.object({ externalId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+        try {
+          await deleteReservation(input.externalId);
+          return { success: true };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to delete reservation',
           });
         }
       }),
