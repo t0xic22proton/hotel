@@ -61,7 +61,7 @@ export const reservations = pgTable("reservations", {
   checkOutDate: timestamp("check_out_date").notNull(),
   numberOfGuests: integer("number_of_guests").notNull(),
   observations: text("observations"),
-  bookingFee: integer("booking_fee").notNull(), // em centavos, sempre 50000 (R$ 500,00)
+  bookingFee: integer("booking_fee").notNull(), // em centavos, varia por faixa de valor total (ver getBookingFee em Reservations.tsx)
   status: reservationStatusEnum("status").default("pending").notNull(),
   buckpayTransactionId: varchar("buckpay_transaction_id", { length: 255 }),
   buckpayStatus: varchar("buckpay_status", { length: 50 }),

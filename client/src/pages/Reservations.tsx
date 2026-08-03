@@ -31,6 +31,13 @@ const ACCOMMODATIONS = [
   },
 ];
 
+// Taxa de agendamento por faixa de valor total da reserva (valores em centavos)
+function getBookingFee(totalPriceCents: number): number {
+  if (totalPriceCents <= 50000) return 28000; // até R$ 500 -> R$ 280
+  if (totalPriceCents <= 90000) return 38000; // até R$ 900 -> R$ 380
+  return 50000; // acima de R$ 900 -> R$ 500
+}
+
 export default function Reservations() {
   const [currentStep, setCurrentStep] = useState(1);
   const [sessionId] = useState(() => crypto.randomUUID());
@@ -109,6 +116,10 @@ export default function Reservations() {
     handleFormChange(e);
   };
 
+  const nightsCount = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+  const totalPrice = selectedAccommodation ? (selectedAccommodation.price * nightsCount) : 0;
+  const bookingFee = getBookingFee(totalPrice);
+
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAccommodation) return;
@@ -121,7 +132,7 @@ export default function Reservations() {
 
     // Salvar reserva
     const externalId = `reserva-${selectedAccommodation.id}-${Date.now()}`;
-    
+
     try {
       await createReservationMutation.mutateAsync({
         externalId,
@@ -134,7 +145,7 @@ export default function Reservations() {
         checkOutDate,
         numberOfGuests: 2,
         observations: formData.observacoes,
-        bookingFee: 50000,
+        bookingFee,
       });
 
       // Criar transação BuckPay
@@ -143,7 +154,7 @@ export default function Reservations() {
 
       const buckpayResponse = await createBuckpayMutation.mutateAsync({
         externalId,
-        amount: 50000,
+        amount: bookingFee,
         buyerName: formData.nome,
         buyerEmail: formData.email,
         buyerCpf: formData.cpf,
@@ -171,9 +182,6 @@ export default function Reservations() {
       setCheckoutStatus('error');
     }
   };
-
-  const nightsCount = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-  const totalPrice = selectedAccommodation ? (selectedAccommodation.price * nightsCount) : 0;
 
   return (
     <div style={{ background: 'var(--reservas-bg)', minHeight: '100vh', fontFamily: 'Manrope, sans-serif' }}>
@@ -385,7 +393,7 @@ export default function Reservations() {
               </div>
               <div className="summary-item" style={{ color: 'var(--reservas-teal)', fontWeight: 700 }}>
                 <span className="label">Taxa de Agendamento</span>
-                <span className="value">R$ 500,00</span>
+                <span className="value">R$ {(bookingFee / 100).toFixed(2)}</span>
               </div>
               <p style={{ fontSize: '11px', color: '#777', marginTop: '5px', lineHeight: 1.3 }}>
                 * A taxa de agendamento será descontada do valor total no check-in. Reembolsável integralmente em até 7 dias em caso de desistência.
@@ -410,7 +418,7 @@ export default function Reservations() {
             </div>
             <div className="checkout-body">
               <p className="checkout-subtitle">
-                Uma taxa de agendamento de R$ 500,00 que será descontada no valor final da reserva. Caso haja desistência em até 7 dias, o valor será reembolsado integralmente.
+                Uma taxa de agendamento de R$ {(bookingFee / 100).toFixed(2)} que será descontada no valor final da reserva. Caso haja desistência em até 7 dias, o valor será reembolsado integralmente.
               </p>
 
               <div className="checkout-summary">
@@ -421,7 +429,7 @@ export default function Reservations() {
                   <span>{checkInDate.toLocaleDateString('pt-BR')} → {checkOutDate.toLocaleDateString('pt-BR')}</span>
                 </div>
                 <div className="checkout-summary-item checkout-amount-highlight">
-                  <span>Taxa de Agendamento: <strong>R$ 500,00</strong></span>
+                  <span>Taxa de Agendamento: <strong>R$ {(bookingFee / 100).toFixed(2)}</strong></span>
                 </div>
               </div>
 
