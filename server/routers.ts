@@ -91,6 +91,7 @@ export const appRouter = router({
         checkInDate: z.date(),
         checkOutDate: z.date(),
         numberOfGuests: z.number().min(1),
+        guestsInfo: z.string().optional(),
         observations: z.string().optional(),
         bookingFee: z.number(),
       }))

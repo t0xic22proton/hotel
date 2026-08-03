@@ -38,6 +38,26 @@ function getBookingFee(totalPriceCents: number): number {
   return 50000; // acima de R$ 900 -> R$ 500
 }
 
+// Diária de cada acomodação é para um casal (2 adultos). Valores adicionais por diária, em centavos.
+const EXTRA_ADULT_PRICE = 17000; // R$ 170,00 por adulto extra, por diária
+const EXTRA_CHILD_PRICE = 8000; // R$ 80,00 por criança de 8+ anos, por diária
+const CHILD_FREE_AGE_LIMIT = 8; // crianças abaixo desta idade não pagam
+const INCLUDED_ADULTS = 2;
+
+type Guest = { id: string; name: string; birthDate: string };
+
+function calculateAge(birthDate: string, referenceDate: Date): number | null {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) return null;
+  let age = referenceDate.getFullYear() - birth.getFullYear();
+  const monthDiff = referenceDate.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && referenceDate.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 export default function Reservations() {
   const [currentStep, setCurrentStep] = useState(1);
   const [sessionId] = useState(() => crypto.randomUUID());
@@ -45,7 +65,43 @@ export default function Reservations() {
   
   const [checkInDate, setCheckInDate] = useState(new Date(2026, 6, 25));
   const [checkOutDate, setCheckOutDate] = useState(new Date(2026, 6, 26));
-  
+
+  const [numberOfAdults, setNumberOfAdults] = useState(2);
+  // Acompanhantes adultos (além do hóspede principal). Quantidade = numberOfAdults - 1.
+  const [companions, setCompanions] = useState<Guest[]>([{ id: crypto.randomUUID(), name: '', birthDate: '' }]);
+  const [children, setChildren] = useState<Guest[]>([]);
+
+  const handleNumberOfAdultsChange = (value: number) => {
+    const adults = Math.max(1, value);
+    setNumberOfAdults(adults);
+    const companionsNeeded = adults - 1;
+    setCompanions(prev => {
+      if (companionsNeeded <= prev.length) return prev.slice(0, companionsNeeded);
+      const extra = Array.from({ length: companionsNeeded - prev.length }, () => ({
+        id: crypto.randomUUID(),
+        name: '',
+        birthDate: '',
+      }));
+      return [...prev, ...extra];
+    });
+  };
+
+  const handleCompanionChange = (id: string, field: 'name' | 'birthDate', value: string) => {
+    setCompanions(prev => prev.map(c => (c.id === id ? { ...c, [field]: value } : c)));
+  };
+
+  const handleAddChild = () => {
+    setChildren(prev => [...prev, { id: crypto.randomUUID(), name: '', birthDate: '' }]);
+  };
+
+  const handleRemoveChild = (id: string) => {
+    setChildren(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleChildChange = (id: string, field: 'name' | 'birthDate', value: string) => {
+    setChildren(prev => prev.map(c => (c.id === id ? { ...c, [field]: value } : c)));
+  };
+
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -117,12 +173,34 @@ export default function Reservations() {
   };
 
   const nightsCount = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-  const totalPrice = selectedAccommodation ? (selectedAccommodation.price * nightsCount) : 0;
+
+  const extraAdultsCount = Math.max(0, numberOfAdults - INCLUDED_ADULTS);
+  const payingChildrenCount = children.filter(c => {
+    const age = calculateAge(c.birthDate, checkInDate);
+    return age !== null && age >= CHILD_FREE_AGE_LIMIT;
+  }).length;
+  const freeChildrenCount = children.length - payingChildrenCount;
+
+  const basePrice = selectedAccommodation ? selectedAccommodation.price * nightsCount : 0;
+  const extraAdultsPrice = extraAdultsCount * EXTRA_ADULT_PRICE * nightsCount;
+  const extraChildrenPrice = payingChildrenCount * EXTRA_CHILD_PRICE * nightsCount;
+  const totalPrice = basePrice + extraAdultsPrice + extraChildrenPrice;
   const bookingFee = getBookingFee(totalPrice);
+
+  const totalGuests = numberOfAdults + children.length;
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAccommodation) return;
+
+    if (companions.some(c => c.name.trim() === '' || c.birthDate === '')) {
+      alert('Informe nome e data de nascimento de todos os acompanhantes.');
+      return;
+    }
+    if (children.some(c => c.name.trim() === '' || c.birthDate === '')) {
+      alert('Informe nome e data de nascimento de todas as crianças.');
+      return;
+    }
 
     // Rastrear abertura do checkout
     trackEventMutation.mutate({
@@ -132,6 +210,12 @@ export default function Reservations() {
 
     // Salvar reserva
     const externalId = `reserva-${selectedAccommodation.id}-${Date.now()}`;
+
+    const guestsInfo = JSON.stringify([
+      { name: formData.nome, birthDate: formData.dataNascimento, isMainGuest: true },
+      ...companions.map(c => ({ name: c.name, birthDate: c.birthDate, isMainGuest: false })),
+      ...children.map(c => ({ name: c.name, birthDate: c.birthDate, isMainGuest: false })),
+    ]);
 
     try {
       await createReservationMutation.mutateAsync({
@@ -143,7 +227,8 @@ export default function Reservations() {
         guestCpf: formData.cpf,
         checkInDate,
         checkOutDate,
-        numberOfGuests: 2,
+        numberOfGuests: totalGuests,
+        guestsInfo,
         observations: formData.observacoes,
         bookingFee,
       });
@@ -315,12 +400,13 @@ export default function Reservations() {
                     />
                   </div>
                   <div className="form-group">
-                    <label>Data de nascimento</label>
+                    <label>Data de nascimento <span className="required">*</span></label>
                     <input
                       type="date"
                       name="dataNascimento"
                       value={formData.dataNascimento}
                       onChange={handleFormChange}
+                      required
                     />
                   </div>
                   <div className="form-group">
@@ -334,6 +420,91 @@ export default function Reservations() {
                     />
                   </div>
                 </div>
+
+                <div className="form-group" style={{ marginTop: '10px' }}>
+                  <h3 style={{ fontSize: '15px', marginBottom: '10px' }}>Hóspedes</h3>
+                  <p style={{ fontSize: '12px', color: '#777', marginBottom: '10px' }}>
+                    A diária desta acomodação já inclui um casal (2 adultos). Adulto extra: R$ {(EXTRA_ADULT_PRICE / 100).toFixed(2)}/diária. Criança a partir de {CHILD_FREE_AGE_LIMIT} anos: R$ {(EXTRA_CHILD_PRICE / 100).toFixed(2)}/diária. Crianças menores de {CHILD_FREE_AGE_LIMIT} anos não pagam. Informe nome e data de nascimento de todos os hóspedes; o CPF é necessário apenas do hóspede principal.
+                  </p>
+
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Número de adultos <span className="required">*</span></label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={numberOfAdults}
+                        onChange={(e) => handleNumberOfAdultsChange(Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+
+                  {companions.map((companion, idx) => (
+                    <div key={companion.id} className="form-grid">
+                      <div className="form-group">
+                        <label>Nome do acompanhante {idx + 1} <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          value={companion.name}
+                          onChange={(e) => handleCompanionChange(companion.id, 'name', e.target.value)}
+                          placeholder="Nome completo"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Data de nascimento <span className="required">*</span></label>
+                        <input
+                          type="date"
+                          value={companion.birthDate}
+                          onChange={(e) => handleCompanionChange(companion.id, 'birthDate', e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  {children.map((child, idx) => (
+                    <div key={child.id} className="form-grid" style={{ alignItems: 'flex-end' }}>
+                      <div className="form-group">
+                        <label>Nome da criança {idx + 1} <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          value={child.name}
+                          onChange={(e) => handleChildChange(child.id, 'name', e.target.value)}
+                          placeholder="Nome completo"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Data de nascimento <span className="required">*</span></label>
+                        <input
+                          type="date"
+                          value={child.birthDate}
+                          onChange={(e) => handleChildChange(child.id, 'birthDate', e.target.value)}
+                          required
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-select"
+                        onClick={() => handleRemoveChild(child.id)}
+                        style={{ height: 'fit-content' }}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="btn-select"
+                    onClick={handleAddChild}
+                    style={{ marginTop: '5px' }}
+                  >
+                    + Adicionar criança
+                  </button>
+                </div>
+
                 <div className="form-group">
                   <label>Observações</label>
                   <textarea
@@ -375,13 +546,33 @@ export default function Reservations() {
               </div>
               <div className="summary-item">
                 <span className="label">Hóspedes</span>
-                <span className="value">2</span>
+                <span className="value">
+                  {totalGuests} ({numberOfAdults} {numberOfAdults === 1 ? 'adulto' : 'adultos'}{children.length > 0 ? `, ${children.length} ${children.length === 1 ? 'criança' : 'crianças'}` : ''})
+                </span>
               </div>
               <hr className="summary-divider" />
               <div className="summary-item">
-                <span className="label">Diária</span>
+                <span className="label">Diária ({selectedAccommodation.name}, casal)</span>
                 <span className="value">R$ {(selectedAccommodation.price / 100).toFixed(2)}</span>
               </div>
+              {extraAdultsCount > 0 && (
+                <div className="summary-item">
+                  <span className="label">Adulto(s) extra ({extraAdultsCount} x {nightsCount} diária(s))</span>
+                  <span className="value">R$ {(extraAdultsPrice / 100).toFixed(2)}</span>
+                </div>
+              )}
+              {payingChildrenCount > 0 && (
+                <div className="summary-item">
+                  <span className="label">Criança(s) {CHILD_FREE_AGE_LIMIT}+ ({payingChildrenCount} x {nightsCount} diária(s))</span>
+                  <span className="value">R$ {(extraChildrenPrice / 100).toFixed(2)}</span>
+                </div>
+              )}
+              {freeChildrenCount > 0 && (
+                <div className="summary-item">
+                  <span className="label">Criança(s) menores de {CHILD_FREE_AGE_LIMIT} anos</span>
+                  <span className="value">Grátis</span>
+                </div>
+              )}
               <div className="summary-item">
                 <span className="label">Taxas</span>
                 <span className="value">Inclusas</span>

@@ -8,6 +8,13 @@
       "when": 1785002649012,
       "tag": "0000_real_slipstream",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785535200000,
+      "tag": "0001_add_guests_info",
+      "breakpoints": true
     }
   ]
 }

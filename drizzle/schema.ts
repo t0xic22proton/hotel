@@ -60,6 +60,7 @@ export const reservations = pgTable("reservations", {
   checkInDate: timestamp("check_in_date").notNull(),
   checkOutDate: timestamp("check_out_date").notNull(),
   numberOfGuests: integer("number_of_guests").notNull(),
+  guestsInfo: text("guests_info"), // JSON string: [{ name, birthDate, isMainGuest }] para todos os hóspedes da reserva
   observations: text("observations"),
   bookingFee: integer("booking_fee").notNull(), // em centavos, varia por faixa de valor total (ver getBookingFee em Reservations.tsx)
   status: reservationStatusEnum("status").default("pending").notNull(),
