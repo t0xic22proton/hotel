@@ -86,29 +86,29 @@
             <div class="hero-form">
                 <h3>Reserve agora sua estadia</h3>
                 <div class="form-row">
-                    <input type="text" placeholder="Seu nome">
-                    <input type="email" placeholder="Seu e-mail">
+                    <input type="text" id="hero-nome" placeholder="Seu nome">
+                    <input type="email" id="hero-email" placeholder="Seu e-mail">
                 </div>
                 <div class="form-row">
-                    <input type="date" placeholder="Check-in">
-                    <input type="date" placeholder="Check-out">
-                    <select>
-                        <option>Adultos</option>
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3</option>
-                        <option>4+</option>
+                    <input type="date" id="hero-checkin" placeholder="Check-in">
+                    <input type="date" id="hero-checkout" placeholder="Check-out">
+                    <select id="hero-adultos">
+                        <option value="">Adultos</option>
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                        <option value="4">4+</option>
                     </select>
                 </div>
                 <div class="form-row">
-                    <select>
-                        <option>Crianças</option>
-                        <option>0</option>
-                        <option>1</option>
-                        <option>2</option>
-                        <option>3+</option>
+                    <select id="hero-criancas">
+                        <option value="">Crianças</option>
+                        <option value="0" selected>0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3+</option>
                     </select>
-                    <button type="button" onclick="window.open('/reservas', '_blank')">BUSCAR DISPONIBILIDADE</button>
+                    <button type="button" onclick="buscarDisponibilidade()">BUSCAR DISPONIBILIDADE</button>
                 </div>
             </div>
         </div>
@@ -394,5 +394,21 @@
     </div>
 
     <script src="js/main.js"></script>
+    <script>
+        function buscarDisponibilidade() {
+            var checkin = document.getElementById('hero-checkin').value;
+            var checkout = document.getElementById('hero-checkout').value;
+            var adultos = document.getElementById('hero-adultos').value;
+            var criancas = document.getElementById('hero-criancas').value;
+
+            var params = new URLSearchParams();
+            if (checkin) params.set('checkin', checkin);
+            if (checkout) params.set('checkout', checkout);
+            if (adultos) params.set('adultos', adultos);
+            if (criancas) params.set('criancas', criancas);
+
+            window.open('/reservas?' + params.toString(), '_blank');
+        }
+    </script>
 </body>
 </html>

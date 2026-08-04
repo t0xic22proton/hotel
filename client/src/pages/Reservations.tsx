@@ -145,6 +145,23 @@ export default function Reservations() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
+  // Pré-preencher check-in/check-out/adultos/crianças vindos do widget da home (?checkin=&checkout=&adultos=&criancas=)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const checkin = fromDateInputValue(params.get('checkin') ?? '');
+    const checkout = fromDateInputValue(params.get('checkout') ?? '');
+    const adultos = Number(params.get('adultos'));
+    const criancas = Number(params.get('criancas'));
+
+    if (checkin) setCheckInDate(checkin);
+    if (checkout) setCheckOutDate(checkout);
+    if (adultos > 0) handleNumberOfAdultsChange(adultos);
+    if (criancas > 0) {
+      setChildren(Array.from({ length: criancas }, () => ({ id: crypto.randomUUID(), name: '', birthDate: '' })));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSelectAccommodation = (acc: typeof ACCOMMODATIONS[0]) => {
     if (!checkInDate || !checkOutDate) {
       alert('Selecione as datas de check-in e check-out.');
