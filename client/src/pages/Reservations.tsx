@@ -78,8 +78,8 @@ export default function Reservations() {
   const [sessionId] = useState(() => crypto.randomUUID());
   const [selectedAccommodation, setSelectedAccommodation] = useState<typeof ACCOMMODATIONS[0] | null>(null);
   
-  const [checkInDate, setCheckInDate] = useState(new Date(2026, 6, 25));
-  const [checkOutDate, setCheckOutDate] = useState(new Date(2026, 6, 26));
+  const [checkInDate, setCheckInDate] = useState<Date | null>(null);
+  const [checkOutDate, setCheckOutDate] = useState<Date | null>(null);
 
   const [numberOfAdults, setNumberOfAdults] = useState(2);
   // Acompanhantes adultos (além do hóspede principal). Quantidade = numberOfAdults - 1.
@@ -146,6 +146,10 @@ export default function Reservations() {
   }, [sessionId]);
 
   const handleSelectAccommodation = (acc: typeof ACCOMMODATIONS[0]) => {
+    if (!checkInDate || !checkOutDate) {
+      alert('Selecione as datas de check-in e check-out.');
+      return;
+    }
     setSelectedAccommodation(acc);
     setCurrentStep(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -187,11 +191,13 @@ export default function Reservations() {
     handleFormChange(e);
   };
 
-  const nightsCount = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+  const nightsCount = checkInDate && checkOutDate
+    ? Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
 
   const extraAdultsCount = Math.max(0, numberOfAdults - INCLUDED_ADULTS);
   const payingChildrenCount = children.filter(c => {
-    const age = calculateAge(c.birthDate, checkInDate);
+    const age = checkInDate ? calculateAge(c.birthDate, checkInDate) : null;
     return age !== null && age >= CHILD_FREE_AGE_LIMIT;
   }).length;
   const freeChildrenCount = children.length - payingChildrenCount;
@@ -207,7 +213,7 @@ export default function Reservations() {
 
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedAccommodation) return;
+    if (!selectedAccommodation || !checkInDate || !checkOutDate) return;
 
     if (companions.some(c => c.name.trim() === '' || c.birthDate === '')) {
       alert('Informe nome e data de nascimento de todos os acompanhantes.');
@@ -335,12 +341,12 @@ export default function Reservations() {
                 <label>Check-in <span className="required">*</span></label>
                 <input
                   type="date"
-                  value={toDateInputValue(checkInDate)}
+                  value={checkInDate ? toDateInputValue(checkInDate) : ''}
                   onChange={(e) => {
                     const newCheckIn = fromDateInputValue(e.target.value);
                     if (!newCheckIn) return;
                     setCheckInDate(newCheckIn);
-                    if (checkOutDate.getTime() <= newCheckIn.getTime()) {
+                    if (checkOutDate && checkOutDate.getTime() <= newCheckIn.getTime()) {
                       setCheckOutDate(new Date(newCheckIn.getTime() + 24 * 60 * 60 * 1000));
                     }
                   }}
@@ -350,12 +356,12 @@ export default function Reservations() {
                 <label>Check-out <span className="required">*</span></label>
                 <input
                   type="date"
-                  min={toDateInputValue(new Date(checkInDate.getTime() + 24 * 60 * 60 * 1000))}
-                  value={toDateInputValue(checkOutDate)}
+                  min={checkInDate ? toDateInputValue(new Date(checkInDate.getTime() + 24 * 60 * 60 * 1000)) : undefined}
+                  value={checkOutDate ? toDateInputValue(checkOutDate) : ''}
                   onChange={(e) => {
                     const newCheckOut = fromDateInputValue(e.target.value);
                     if (!newCheckOut) return;
-                    if (newCheckOut.getTime() <= checkInDate.getTime()) {
+                    if (checkInDate && newCheckOut.getTime() <= checkInDate.getTime()) {
                       alert('Check-out deve ser depois do check-in.');
                       return;
                     }
@@ -584,11 +590,11 @@ export default function Reservations() {
               </div>
               <div className="summary-item">
                 <span className="label">Check-in</span>
-                <span className="value">{checkInDate.toLocaleDateString('pt-BR')}</span>
+                <span className="value">{checkInDate?.toLocaleDateString('pt-BR')}</span>
               </div>
               <div className="summary-item">
                 <span className="label">Check-out</span>
-                <span className="value">{checkOutDate.toLocaleDateString('pt-BR')}</span>
+                <span className="value">{checkOutDate?.toLocaleDateString('pt-BR')}</span>
               </div>
               <div className="summary-item">
                 <span className="label">Noites</span>
@@ -667,7 +673,7 @@ export default function Reservations() {
                   <span>{selectedAccommodation?.name}</span>
                 </div>
                 <div className="checkout-summary-item">
-                  <span>{checkInDate.toLocaleDateString('pt-BR')} → {checkOutDate.toLocaleDateString('pt-BR')}</span>
+                  <span>{checkInDate?.toLocaleDateString('pt-BR')} → {checkOutDate?.toLocaleDateString('pt-BR')}</span>
                 </div>
                 <div className="checkout-summary-item checkout-amount-highlight">
                   <span>Taxa de Agendamento: <strong>R$ {(bookingFee / 100).toFixed(2)}</strong></span>
