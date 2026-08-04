@@ -43,8 +43,23 @@ const EXTRA_ADULT_PRICE = 17000; // R$ 170,00 por adulto extra, por diária
 const EXTRA_CHILD_PRICE = 8000; // R$ 80,00 por criança de 8+ anos, por diária
 const CHILD_FREE_AGE_LIMIT = 8; // crianças abaixo desta idade não pagam
 const INCLUDED_ADULTS = 2;
+const SERVICE_FEE_RATE = 0.10; // 10% de taxa de serviço sobre diária + extras
 
 type Guest = { id: string; name: string; birthDate: string };
+
+function toDateInputValue(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function fromDateInputValue(value: string): Date | null {
+  if (!value) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
 
 function calculateAge(birthDate: string, referenceDate: Date): number | null {
   if (!birthDate) return null;
@@ -184,7 +199,8 @@ export default function Reservations() {
   const basePrice = selectedAccommodation ? selectedAccommodation.price * nightsCount : 0;
   const extraAdultsPrice = extraAdultsCount * EXTRA_ADULT_PRICE * nightsCount;
   const extraChildrenPrice = payingChildrenCount * EXTRA_CHILD_PRICE * nightsCount;
-  const totalPrice = basePrice + extraAdultsPrice + extraChildrenPrice;
+  const serviceFee = Math.round((basePrice + extraAdultsPrice + extraChildrenPrice) * SERVICE_FEE_RATE);
+  const totalPrice = basePrice + extraAdultsPrice + extraChildrenPrice + serviceFee;
   const bookingFee = getBookingFee(totalPrice);
 
   const totalGuests = numberOfAdults + children.length;
@@ -314,6 +330,40 @@ export default function Reservations() {
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px', marginBottom: '40px' }}>
         {currentStep === 1 && (
           <div className="accommodations-section">
+            <div className="form-grid" style={{ marginBottom: '20px' }}>
+              <div className="form-group">
+                <label>Check-in <span className="required">*</span></label>
+                <input
+                  type="date"
+                  value={toDateInputValue(checkInDate)}
+                  onChange={(e) => {
+                    const newCheckIn = fromDateInputValue(e.target.value);
+                    if (!newCheckIn) return;
+                    setCheckInDate(newCheckIn);
+                    if (checkOutDate.getTime() <= newCheckIn.getTime()) {
+                      setCheckOutDate(new Date(newCheckIn.getTime() + 24 * 60 * 60 * 1000));
+                    }
+                  }}
+                />
+              </div>
+              <div className="form-group">
+                <label>Check-out <span className="required">*</span></label>
+                <input
+                  type="date"
+                  min={toDateInputValue(new Date(checkInDate.getTime() + 24 * 60 * 60 * 1000))}
+                  value={toDateInputValue(checkOutDate)}
+                  onChange={(e) => {
+                    const newCheckOut = fromDateInputValue(e.target.value);
+                    if (!newCheckOut) return;
+                    if (newCheckOut.getTime() <= checkInDate.getTime()) {
+                      alert('Check-out deve ser depois do check-in.');
+                      return;
+                    }
+                    setCheckOutDate(newCheckOut);
+                  }}
+                />
+              </div>
+            </div>
             <h2 className="section-title">Acomodações Disponíveis</h2>
             <div className="accommodations-grid">
               {ACCOMMODATIONS.map((acc) => (
@@ -574,8 +624,8 @@ export default function Reservations() {
                 </div>
               )}
               <div className="summary-item">
-                <span className="label">Taxas</span>
-                <span className="value">Inclusas</span>
+                <span className="label">Taxa de serviço (10%)</span>
+                <span className="value">R$ {(serviceFee / 100).toFixed(2)}</span>
               </div>
               <hr className="summary-divider" />
               <div className="summary-total">
