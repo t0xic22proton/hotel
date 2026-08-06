@@ -1,3 +1,6 @@
+import { config } from "dotenv";
+config();
+config({ path: ".env.local", override: true });
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { ADMIN_OPEN_ID, signAdminSession } from "./_core/session";
@@ -229,6 +232,23 @@ export const appRouter = router({
             ? (phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`)
             : undefined;
 
+          const payload = {
+            external_id: input.externalId,
+            payment_method: 'pix',
+            amount: input.amount,
+            buyer: {
+              name: input.buyerName,
+              email: input.buyerEmail,
+              document: buyerDocument,
+              phone: buyerPhone,
+            },
+            product: {
+              name: 'Taxa de Agendamento - Resort Fazenda São João',
+            },
+          };
+
+          console.log('[BuckPay] Sending Payload:', JSON.stringify(payload, null, 2));
+
           const response = await fetch('https://api.realtechdev.com.br/v1/transactions', {
             method: 'POST',
             headers: {
@@ -267,11 +287,11 @@ export const appRouter = router({
             console.error('[BuckPay] Failed to parse JSON response:', e);
             throw new Error('Invalid JSON response from BuckPay');
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Failed to create BuckPay transaction:', error);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to create transaction',
+            message: error.message || 'Failed to create transaction',
           });
         }
       }),
