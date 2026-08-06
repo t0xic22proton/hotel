@@ -249,35 +249,44 @@ export const appRouter = router({
 
           console.log('[BuckPay] Sending Payload:', JSON.stringify(payload, null, 2));
 
-          const response = await fetch('https://api.realtechdev.com.br/v1/transactions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${BUCKPAY_TOKEN}`,
-              'Content-Type': 'application/json',
-              'User-Agent': 'Buckpay API',
-            },
-            body: JSON.stringify({
-              external_id: input.externalId,
-              payment_method: 'pix',
-              amount: input.amount,
-              buyer: {
-                name: input.buyerName,
-                email: input.buyerEmail,
-                document: buyerDocument,
-                phone: buyerPhone,
+          // A API da BuckPay apresenta falhas intermitentes (500 "Internal
+          // server error" do lado deles, mesmo payload válido). Tenta de novo
+          // algumas vezes antes de desistir; erros 4xx (validação, duplicidade)
+          // não são retentados pois nesse caso o problema é o payload, não intermitência.
+          const requestBody = JSON.stringify(payload);
+          const maxAttempts = 3;
+          let responseText = '';
+          let lastStatus = 0;
+          let ok = false;
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            const response = await fetch('https://api.realtechdev.com.br/v1/transactions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${BUCKPAY_TOKEN}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'Buckpay API',
               },
-              product: {
-                name: 'Taxa de Agendamento - Resort Fazenda São João',
-              },
-            }),
-          });
+              body: requestBody,
+            });
 
-          const responseText = await response.text();
-          console.log(`[BuckPay] Response Status: ${response.status}`);
-          console.log(`[BuckPay] Response Body: ${responseText}`);
+            lastStatus = response.status;
+            responseText = await response.text();
+            console.log(`[BuckPay] Attempt ${attempt}/${maxAttempts} - Status: ${response.status}`);
+            console.log(`[BuckPay] Response Body: ${responseText}`);
 
-          if (!response.ok) {
-            throw new Error(`BuckPay API error: ${response.status} - ${responseText}`);
+            if (response.ok) {
+              ok = true;
+              break;
+            }
+
+            const isRetryable = response.status >= 500;
+            if (!isRetryable || attempt === maxAttempts) break;
+
+            await new Promise((resolve) => setTimeout(resolve, 800 * attempt));
+          }
+
+          if (!ok) {
+            throw new Error(`BuckPay API error: ${lastStatus} - ${responseText}`);
           }
 
           try {
