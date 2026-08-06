@@ -287,15 +287,26 @@ export default function Reservations() {
         buyerPhone: formData.telefone,
       });
 
+      // Log para depuração no console do navegador
+      console.log('Buckpay Full Response:', buckpayResponse);
+
       // Tentar obter dados do objeto 'data' ou diretamente do nível superior
       const transactionData = buckpayResponse.data || buckpayResponse;
-      const pix = transactionData.pix;
+      
+      // Mapear possíveis campos de PIX (algumas APIs variam nomes)
+      const pix = transactionData.pix || transactionData.point_of_interaction?.transaction_data || transactionData;
+      
+      // Tentar obter o código copia e cola (payload EMV)
+      const code = pix.code || pix.qrcode || pix.qr_code || pix.payload || pix.ticket_url;
+      
+      // Tentar obter o QR Code Base64
+      const qrBase64 = pix.qrcode_base64 || pix.qr_code_base64 || pix.qrcode_image || pix.qr_code_image;
 
-      if (pix) {
-        setPixCode(pix.code);
+      if (code || qrBase64) {
+        setPixCode(code || null);
         setQrCode(
-          pix.qrcode_base64
-            ? `data:image/png;base64,${pix.qrcode_base64}`
+          qrBase64
+            ? (qrBase64.startsWith('data:') ? qrBase64 : `data:image/png;base64,${qrBase64}`)
             : null
         );
         setCheckoutStatus('success');
@@ -307,7 +318,7 @@ export default function Reservations() {
         });
       } else {
         // Se não houver dados de PIX, considerar como erro de processamento
-        console.error('Buckpay response missing PIX data:', buckpayResponse);
+        console.error('Buckpay response missing PIX data. Transaction Data:', transactionData);
         setCheckoutStatus('error');
       }
     } catch (error) {
@@ -723,19 +734,42 @@ export default function Reservations() {
                     </button>
                   </>
                 )}
-                {checkoutStatus === 'success' && qrCode && (
-                  <div className="checkout-pix-display">
-                    <img src={qrCode} alt="QR Code PIX" className="checkout-pix-qrcode" />
-                    <p className="checkout-pix-copy">Copie o código PIX abaixo:</p>
-                    {pixCode && (
-                      <div className="checkout-pix-code">{pixCode}</div>
-                    )}
-                  </div>
-                )}
                 {checkoutStatus === 'success' && (
-                  <button className="btn-close-checkout" onClick={() => setCheckoutOpen(false)}>
-                    Concluído
-                  </button>
+                  <div className="checkout-pix-display">
+                    {qrCode ? (
+                      <img src={qrCode} alt="QR Code PIX" className="checkout-pix-qrcode" />
+                    ) : (
+                      <div className="checkout-pix-no-qr">
+                        ⚠️ QR Code não disponível. Use o código abaixo.
+                      </div>
+                    )}
+                    
+                    {pixCode ? (
+                      <>
+                        <p className="checkout-pix-copy">Copie o código PIX abaixo:</p>
+                        <div className="checkout-pix-code-container">
+                          <div className="checkout-pix-code">{pixCode}</div>
+                          <button 
+                            className="btn-copy-pix"
+                            onClick={() => {
+                              navigator.clipboard.writeText(pixCode);
+                              alert('Código Pix copiado!');
+                            }}
+                          >
+                            Copiar Código
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="checkout-status error">
+                        Erro: Código Pix não gerado pela API.
+                      </div>
+                    )}
+                    
+                    <button className="btn-close-checkout" style={{ marginTop: '20px' }} onClick={() => setCheckoutOpen(false)}>
+                      Concluído
+                    </button>
+                  </div>
                 )}
               </div>
 

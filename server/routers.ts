@@ -252,14 +252,21 @@ export const appRouter = router({
             }),
           });
 
+          const responseText = await response.text();
+          console.log(`[BuckPay] Response Status: ${response.status}`);
+          console.log(`[BuckPay] Response Body: ${responseText}`);
+
           if (!response.ok) {
-            const error = await response.text();
-            console.error('BuckPay error:', error);
-            throw new Error(`BuckPay API error: ${response.status}`);
+            throw new Error(`BuckPay API error: ${response.status} - ${responseText}`);
           }
 
-          const data = await response.json();
-          return data;
+          try {
+            const data = JSON.parse(responseText);
+            return data;
+          } catch (e) {
+            console.error('[BuckPay] Failed to parse JSON response:', e);
+            throw new Error('Invalid JSON response from BuckPay');
+          }
         } catch (error) {
           console.error('Failed to create BuckPay transaction:', error);
           throw new TRPCError({
