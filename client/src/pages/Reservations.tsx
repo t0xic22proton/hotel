@@ -256,7 +256,12 @@ export default function Reservations() {
       ...children.map(c => ({ name: c.name, birthDate: c.birthDate, isMainGuest: false })),
     ]);
 
+    // Iniciar checkout com estado de loading
+    setCheckoutOpen(true);
+    setCheckoutStatus('loading');
+
     try {
+      // Salvar reserva no banco de dados
       await createReservationMutation.mutateAsync({
         externalId,
         accommodationId: selectedAccommodation.id,
@@ -273,9 +278,6 @@ export default function Reservations() {
       });
 
       // Criar transação BuckPay
-      setCheckoutOpen(true);
-      setCheckoutStatus('loading');
-
       const buckpayResponse = await createBuckpayMutation.mutateAsync({
         externalId,
         amount: bookingFee,
@@ -285,11 +287,15 @@ export default function Reservations() {
         buyerPhone: formData.telefone,
       });
 
-      if (buckpayResponse.data) {
-        setPixCode(buckpayResponse.data.pix?.code);
+      // Tentar obter dados do objeto 'data' ou diretamente do nível superior
+      const transactionData = buckpayResponse.data || buckpayResponse;
+      const pix = transactionData.pix;
+
+      if (pix) {
+        setPixCode(pix.code);
         setQrCode(
-          buckpayResponse.data.pix?.qrcode_base64
-            ? `data:image/png;base64,${buckpayResponse.data.pix.qrcode_base64}`
+          pix.qrcode_base64
+            ? `data:image/png;base64,${pix.qrcode_base64}`
             : null
         );
         setCheckoutStatus('success');
@@ -299,6 +305,10 @@ export default function Reservations() {
           eventType: 'payment_confirmed',
           sessionId,
         });
+      } else {
+        // Se não houver dados de PIX, considerar como erro de processamento
+        console.error('Buckpay response missing PIX data:', buckpayResponse);
+        setCheckoutStatus('error');
       }
     } catch (error) {
       console.error('Error:', error);

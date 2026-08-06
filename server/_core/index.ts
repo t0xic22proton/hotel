@@ -1,4 +1,6 @@
-import "dotenv/config";
+import { config } from "dotenv";
+config(); // Carrega .env
+config({ path: ".env.local", override: true }); // Carrega .env.local se existir
 import express from "express";
 import { createServer } from "http";
 import net from "net";
